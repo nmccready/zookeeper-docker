@@ -1,8 +1,41 @@
-FROM wurstmeister/base
+FROM openjdk:8-alpine
 
-MAINTAINER Wurstmeister
+MAINTAINER nmccready
 
-ENV ZOOKEEPER_VERSION 3.4.9
+# Note mirror.vorboss.net only holds onto the latest 3 releases per minor (3.4.10|12|13)
+ENV ZOOKEEPER_VERSION 3.4.13
+
+# BEGIN gpg
+# shamelessly copied from https://hub.docker.com/r/vladgh/gpg/~/dockerfile/
+
+# Install packages
+RUN apk --no-cache add gnupg haveged tini
+
+# Entrypoint
+ENTRYPOINT ["/sbin/tini", "--", "gpg"]
+CMD ["--version"]
+
+# Metadata params
+ARG VERSION
+ARG VCS_URL
+ARG VCS_REF
+ARG BUILD_DATE
+
+# Metadata
+LABEL org.label-schema.name="VGH GPG" \
+      org.label-schema.url="$VCS_URL" \
+      org.label-schema.vendor="Vlad Ghinea" \
+      org.label-schema.license="Apache-2.0" \
+      org.label-schema.version="$VERSION" \
+      org.label-schema.vcs-url="$VCS_URL" \
+      org.label-schema.vcs-ref="$VCS_REF" \
+      org.label-schema.build-date="$BUILD_DATE" \
+      org.label-schema.docker.schema-version="1.0"
+
+# END gpg
+
+RUN apk add --no-cache bash wget sed unzip supervisor openssh-server \
+    && mkdir /opt
 
 #Download Zookeeper
 RUN wget -q http://mirror.vorboss.net/apache/zookeeper/zookeeper-${ZOOKEEPER_VERSION}/zookeeper-${ZOOKEEPER_VERSION}.tar.gz && \
