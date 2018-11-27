@@ -12,8 +12,8 @@ ENV ZOOKEEPER_VERSION 3.4.13
 RUN apk --no-cache add gnupg haveged tini
 
 # Entrypoint
-ENTRYPOINT ["/sbin/tini", "--", "gpg"]
-CMD ["--version"]
+# ENTRYPOINT ["/sbin/tini", "--", "gpg"]
+# CMD ["--version"]
 
 # Metadata params
 ARG VERSION
@@ -34,8 +34,12 @@ LABEL org.label-schema.name="VGH GPG" \
 
 # END gpg
 
-RUN apk add --no-cache bash wget sed unzip supervisor openssh-server \
-    && mkdir /opt
+RUN apk add --no-cache bash wget sed unzip supervisor openssh-server openssh-keygen \
+    && mkdir /opt \
+    # build out required keys
+    && ssh-keygen -b 2048 -t rsa -f /etc/ssh/ssh_host_rsa_key -q -N "" \
+    && ssh-keygen -b 521 -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key -q -N "" \
+    && ssh-keygen -b 521 -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -q -N ""
 
 #Download Zookeeper
 RUN wget -q http://mirror.vorboss.net/apache/zookeeper/zookeeper-${ZOOKEEPER_VERSION}/zookeeper-${ZOOKEEPER_VERSION}.tar.gz && \
@@ -54,7 +58,7 @@ RUN tar -xzf zookeeper-${ZOOKEEPER_VERSION}.tar.gz -C /opt
 #Configure
 RUN mv /opt/zookeeper-${ZOOKEEPER_VERSION}/conf/zoo_sample.cfg /opt/zookeeper-${ZOOKEEPER_VERSION}/conf/zoo.cfg
 
-ENV JAVA_HOME /usr/lib/jvm/java-7-openjdk-amd64
+ENV JAVA_HOME /usr/lib/jvm/default-jvm
 ENV ZK_HOME /opt/zookeeper-${ZOOKEEPER_VERSION}
 RUN sed  -i "s|/tmp/zookeeper|$ZK_HOME/data|g" $ZK_HOME/conf/zoo.cfg; mkdir $ZK_HOME/data
 
